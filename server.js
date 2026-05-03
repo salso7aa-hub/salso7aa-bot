@@ -77,11 +77,8 @@ app.get('/auth/callback', async (req, res) => {
       await shopifyRequest('PUT', `/customers/${customer.id}.json`, { customer: { id: customer.id, tags: allTags } });
     }
 
-    return res.send(page('✅ Discord Connected!',
-      `Your Discord account <strong>${discordUser.username}</strong> has been linked to your store account.<br>
-       From now on, every purchase will automatically open a ticket in our Discord server.`,
-      'success'
-    ));
+    // Redirect back to store with flag so JS can update the button
+    return res.redirect('https://salso7aa-2.myshopify.com/?discord=connected&user=' + encodeURIComponent(discordUser.username));
 
   } catch (err) {
     console.error('OAuth error:', err);
