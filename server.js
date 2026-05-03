@@ -60,14 +60,10 @@ app.get('/auth/callback', async (req, res) => {
     const discordUser = await discordGet('https://discord.com/api/users/@me', tokenRes.access_token);
     if (!discordUser.email) throw new Error('Could not retrieve Discord email.');
 
-    // Find matching Shopify customer
-    const customer = await shopifyGetCustomerByEmail(discordUser.email);
+    // Find or create Shopify customer
+    let customer = await shopifyGetCustomerByEmail(discordUser.email);
     if (!customer) {
-      return res.send(page('❌ Account not found',
-        `No Shopify account was found with your Discord email <strong>${discordUser.email}</strong>.<br>
-         Make sure you used the same email when placing your order.`,
-        'error'
-      ));
+      customer = await shopifyCreateCustomer(discordUser.email, discordUser.username);
     }
 
     // Save Discord ID + username as customer metafields
@@ -217,6 +213,20 @@ function shopifyRequest(method, path, body) {
 async function shopifyGetCustomerByEmail(email) {
   const res = await shopifyRequest('GET', `/customers/search.json?query=email:${encodeURIComponent(email)}&limit=1`);
   return res.customers?.[0] || null;
+}
+
+async function shopifyCreateCustomer(email, discordUsername) {
+  const res = await shopifyRequest('POST', '/customers.json', {
+    customer: {
+      email,
+      first_name: discordUsername,
+      last_name: '(Discord)',
+      tags: 'discord-connected',
+      email_marketing_consent: { state: 'not_subscribed', opt_in_level: 'single_opt_in' }
+    }
+  });
+  if (!res.customer) throw new Error('Failed to create customer: ' + JSON.stringify(res));
+  return res.customer;
 }
 
 async function shopifyGetMetafields(customerId) {
