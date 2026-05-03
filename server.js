@@ -1,6 +1,6 @@
 const express = require('express');
 const https = require('https');
-const { Client, GatewayIntentBits, PermissionFlagsBits, ChannelType } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionFlagsBits, ChannelType, OverwriteType } = require('discord.js');
 
 const app = express();
 app.use(express.json());
@@ -151,11 +151,13 @@ async function createTicket({ discordId, discordUser, orderName, items, total, e
     parent: category.id,
     permissionOverwrites: [
       {
-        id:   guild.roles.everyone,
+        id:   guild.id,
+        type: OverwriteType.Role,
         deny: [PermissionFlagsBits.ViewChannel],
       },
       {
         id:    discordId,
+        type:  OverwriteType.Member,
         allow: [
           PermissionFlagsBits.ViewChannel,
           PermissionFlagsBits.SendMessages,
