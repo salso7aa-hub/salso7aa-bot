@@ -118,8 +118,13 @@ app.post('/webhooks/orders-paid', async (req, res) => {
 
 // ── TICKET CREATOR ───────────────────────────────────────────────────────────
 async function createTicket({ discordId, discordUser, orderName, items, total, email }) {
-  await bot.guilds.fetch(); // ensure cache is fresh
-  const guild = bot.guilds.cache.get(GUILD_ID);
+  let guild;
+  try {
+    guild = await bot.guilds.fetch(GUILD_ID);
+    guild = await guild.fetch(); // get full guild object
+  } catch (e) {
+    return console.error('Guild not found or bot not in server:', GUILD_ID, e.message);
+  }
   if (!guild) return console.error('Guild not found:', GUILD_ID);
 
   // Find or create a "Tickets" category
