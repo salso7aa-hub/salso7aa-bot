@@ -78,7 +78,14 @@ app.get('/auth/callback', async (req, res) => {
     }
 
     // Redirect back to store with flag so JS can update the button
-    return res.redirect('https://salso7aa-2.myshopify.com/?discord=connected&user=' + encodeURIComponent(discordUser.username));
+    const avatarUrl = discordUser.avatar
+      ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png?size=128`
+      : `https://cdn.discordapp.com/embed/avatars/${parseInt(discordUser.discriminator || 0) % 5}.png`;
+    return res.redirect(
+      'https://salso7aa-2.myshopify.com/?discord=connected' +
+      '&user='   + encodeURIComponent(discordUser.username) +
+      '&avatar=' + encodeURIComponent(avatarUrl)
+    );
 
   } catch (err) {
     console.error('OAuth error:', err);
