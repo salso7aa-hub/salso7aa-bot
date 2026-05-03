@@ -17,7 +17,7 @@ const PORT           = process.env.PORT || 3000;
 
 // ── DISCORD BOT ──────────────────────────────────────────────────────────────
 const bot = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
+  intents: [GatewayIntentBits.Guilds]
 });
 
 bot.once('ready', () => console.log(`Bot ready: ${bot.user.tag}`));
