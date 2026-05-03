@@ -70,6 +70,13 @@ app.get('/auth/callback', async (req, res) => {
     await shopifySetMetafield(customer.id, 'user_id',  discordUser.id);
     await shopifySetMetafield(customer.id, 'username', discordUser.username);
 
+    // Add discord-connected tag so Liquid can detect it
+    const existingTags = (customer.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+    if (!existingTags.includes('discord-connected')) {
+      const allTags = [...existingTags, 'discord-connected'].join(', ');
+      await shopifyRequest('PUT', `/customers/${customer.id}.json`, { customer: { id: customer.id, tags: allTags } });
+    }
+
     return res.send(page('✅ Discord Connected!',
       `Your Discord account <strong>${discordUser.username}</strong> has been linked to your store account.<br>
        From now on, every purchase will automatically open a ticket in our Discord server.`,
