@@ -185,9 +185,10 @@ async function createTicket({ discordId, discordUser, orderName, items, total, e
       color: 0x7b2fff,
       title: `🎟️ Order Ticket — ${orderName}`,
       description:
-        `Hey **${discordUser}**, your order has been received! 🎉\n\n` +
+        `Hey <@${discordId}>, your order has been received! 🎉\n\n` +
         `Our team will deliver your item in-game as soon as possible.\n` +
-        `Please stay in this channel and we will message you here.`,
+        `Please stay in this channel and we will message you here.\n\n` +
+        `📋 [View delivery guide](https://salso7aa-2.myshopify.com/pages/order-confirmed)`,
       fields: [
         { name: '📦 Items',    value: items,  inline: false },
         { name: '💰 Total',    value: total,  inline: true  },
@@ -269,6 +270,41 @@ async function shopifySetMetafield(customerId, key, value) {
   }
 }
 
+// ── PUBLIC API ENDPOINTS ──────────────────────────────────────────────────────
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+
+// Vouches from Discord channel
+app.get('/api/vouches', async (req, res) => {
+  try {
+    const msgs = await discordBotGet(`https://discord.com/api/v10/channels/1364224843360501782/messages?limit=15`);
+    if (!Array.isArray(msgs)) return res.set(CORS).json([]);
+    const vouches = msgs
+      .filter(m => m.content && m.content.length > 15 && !m.author.bot)
+      .slice(0, 10)
+      .map(m => ({
+        content:   m.content.slice(0, 280),
+        author:    m.author.global_name || m.author.username,
+        avatar:    m.author.avatar
+          ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64`
+          : null,
+        timestamp: m.timestamp,
+      }));
+    res.set(CORS).json(vouches);
+  } catch (e) { res.set(CORS).status(500).json([]); }
+});
+
+// Discord server widget info
+app.get('/api/widget', async (req, res) => {
+  try {
+    const guild = await discordBotGet(`https://discord.com/api/v10/guilds/${GUILD_ID}?with_counts=true`);
+    res.set(CORS).json({
+      name:    guild.name,
+      members: guild.approximate_member_count || 0,
+      online:  guild.approximate_presence_count || 0,
+    });
+  } catch (e) { res.set(CORS).status(500).json({}); }
+});
+
 // ── DISCORD HELPERS ───────────────────────────────────────────────────────────
 function discordPost(url, params) {
   return new Promise((resolve, reject) => {
@@ -301,6 +337,24 @@ function discordGet(url, token) {
       path:     u.pathname,
       method:   'GET',
       headers: { Authorization: 'Bearer ' + token },
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => resolve(JSON.parse(d)));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+function discordBotGet(url) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const req = https.request({
+      hostname: u.hostname,
+      path:     u.pathname + u.search,
+      method:   'GET',
+      headers: { Authorization: 'Bot ' + BOT_TOKEN },
     }, res => {
       let d = '';
       res.on('data', c => d += c);
